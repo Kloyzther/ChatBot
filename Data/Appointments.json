@@ -1,0 +1,103 @@
+{
+    "appointments": [
+        {
+            "paciente": "Juan Pérez",
+            "dni": "12345678",
+            "doctor": "Dr. Juan",
+            "fecha": "03/09/2025",
+            "hora": "11-15",
+            "celular": "2342",
+            "ciudad": "adasdsa"
+        },
+        {
+            "paciente": "Juan Pérez",
+            "dni": "12345678",
+            "doctor": "Dra. Ana",
+            "fecha": "03/09/2025",
+            "hora": "7-11",
+            "celular": "234",
+            "ciudad": "sadas"
+        },
+        {
+            "paciente": "Juan Pérez",
+            "dni": "12345678",
+            "doctor": "Dra. Ana",
+            "fecha": "03/09/2025",
+            "hora": "11-15",
+            "celular": "123123",
+            "ciudad": "peru"
+        },
+        {
+            "paciente": "María López",
+            "dni": "87654321",
+            "doctor": "Dra. Ana",
+            "fecha": "04/09/2025",
+            "hora": "11-15",
+            "celular": "123123",
+            "ciudad": "peru"
+        },
+        {
+            "paciente": "María López",
+            "dni": "87654321",
+            "doctor": "Dra. Ana",
+            "fecha": "04/09/2025",
+            "hora": "15-19",
+            "celular": "423432",
+            "ciudad": "peru"
+        },
+        {
+            "paciente": "Juan Pérez",
+            "dni": "12345678",
+            "doctor": "Dr. Juan",
+            "fecha": "09/09/2025",
+            "hora": "7-11",
+            "celular": "876538765",
+            "ciudad": "Ayacucho"
+        },
+        {
+            "paciente": "Juan Pérez",
+            "dni": "12345678",
+            "doctor": "Dr. Juan",
+            "fecha": "30/09/2025",
+            "hora": "7-11",
+            "celular": "12345678",
+            "ciudad": "peru"
+        },
+        {
+            "paciente": "Juan Pérez",
+            "dni": "12345678",
+            "doctor": "Dr. Juan",
+            "fecha": "24/09/2025",
+            "hora": "7-11",
+            "celular": "12345678",
+            "ciudad": "cuzco"
+        },
+        {
+            "paciente": "Juan Pérez",
+            "dni": "12345678",
+            "doctor": "Dra. Ana",
+            "fecha": "07/09/2025",
+            "hora": "7-11",
+            "celular": null,
+            "ciudad": null
+        },
+        {
+            "paciente": "Juan Pérez",
+            "dni": "12345678",
+            "doctor": "Dr. Juan",
+            "fecha": "18/09/2025",
+            "hora": "7-11",
+            "celular": null,
+            "ciudad": null
+        },
+        {
+            "paciente": "Juan Pérez",
+            "dni": "12345678",
+            "doctor": "Dra. Ana",
+            "fecha": "28/09/2025",
+            "hora": "7-11",
+            "celular": "966148401",
+            "ciudad": "Ayaguchi"
+        }
+    ]
+}

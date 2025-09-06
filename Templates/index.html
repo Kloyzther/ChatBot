@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Doctor Bot</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: url("../static/Imagenes/Fondo.png") no-repeat center center;
+            background-size: cover; /* para que cubra todo el fondo */
+        }
+        /* Botón flotante */
+        #chat-button { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 50%; background-color: #007bff; color: white; font-size: 30px; text-align: center; line-height: 60px; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.3); z-index: 1000; }
+
+        /* Ventana del chat */
+        #chat-window { display: none; position: fixed; bottom: 100px; right: 30px; width: 350px; height: 450px; background-color: white; border: 2px solid #007bff; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; flex-direction: column; }
+
+        #chat-header { background-color: #00bfff; color: white; font-weight: bold; padding: 10px; border-top-left-radius: 10px; border-top-right-radius: 10px; display: flex; align-items: center; }
+        #chat-header img { width: 24px; height: 24px; margin-right: 10px; }
+
+        #chat-messages { flex: 1; padding: 10px; overflow-y: auto; border-bottom: 1px solid #ccc; }
+        #chat-messages .user { color: blue; margin-bottom: 5px; }
+        #chat-messages .bot { color: green; margin-bottom: 5px; }
+
+        #chat-form { display: flex; padding: 10px; }
+        #chat-form input { flex: 1; padding: 5px; }
+        #chat-form button { padding: 5px 10px; margin-left: 5px; }
+
+        /* Calendario visual */
+        #datepicker-container { display: none; padding: 10px; border-top: 1px solid #ccc; background: #f7f7f7; }
+        #datepicker-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        #datepicker-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+        #datepicker-days div { text-align: center; padding: 5px; cursor: pointer; border-radius: 4px; }
+        #datepicker-days div:hover { background-color: #d0eaff; }
+        .day-header { font-weight: bold; background-color: #007bff; color: white; }
+        .disabled { color: #ccc; cursor: default; }
+    </style>
+</head>
+<body>
+    <div id="chat-button">💬</div>
+    <div id="chat-window">
+        <div id="chat-header">
+            <img src="https://www.pngmart.com/files/21/Male-Doctor-Transparent-PNG.png" alt="Dr. Leo" style="width: 50px; height: 50px; margin-right: 10px;">
+            <div style="display:flex; flex-direction:column; line-height:1.2;">
+                <strong>Dr. Leo</strong>
+                <span style="font-size:12px;">Asistente de citas virtual</span>
+            </div>
+        </div>
+
+        <div id="chat-messages"></div>
+
+        <div id="datepicker-container">
+            <div id="datepicker-header">
+                <button id="prev-month">&#8592;</button>
+                <span id="month-year"></span>
+                <button id="next-month">&#8594;</button>
+            </div>
+            <div id="datepicker-days"></div>
+        </div>
+
+        <form id="chat-form">
+            <input type="text" id="chat-input" placeholder="Escribe tu mensaje..." required>
+            <button type="submit">Enviar</button>
+        </form>
+    </div>
+
+    <script>
+        const chatButton = document.getElementById("chat-button");
+        const chatWindow = document.getElementById("chat-window");
+        const chatForm = document.getElementById("chat-form");
+        const chatInput = document.getElementById("chat-input");
+        const chatMessages = document.getElementById("chat-messages");
+        const datepickerContainer = document.getElementById("datepicker-container");
+        const datepickerDays = document.getElementById("datepicker-days");
+        const monthYear = document.getElementById("month-year");
+        const prevMonth = document.getElementById("prev-month");
+        const nextMonth = document.getElementById("next-month");
+
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+        const dayInitials = ['L','M','M','J','V','S','D'];
+
+        let availability = {}; // datos reales se cargarán del backend
+
+        // Trae disponibilidad del backend
+        async function loadAvailability() {
+            try {
+                const response = await fetch("/api/dates");
+                availability = await response.json();
+            } catch(e) {
+                console.error("No se pudo cargar disponibilidad", e);
+            }
+        }
+
+        function getDayColor(dateObj) {
+            const dateKey = dateObj.toISOString().slice(0,10);
+            const today = new Date();
+            today.setHours(0,0,0,0);
+
+            // Si la fecha ya pasó
+            if(dateObj < today) return "lightgray";
+
+            const dayData = availability[dateKey];
+
+            // Si la fecha no existe en Dates.json → disponible por defecto
+            if(!dayData) return "green";
+
+            let totalBloques = 0;
+            let bloquesOcupados = 0;
+
+            for (const doctor in dayData) {
+                const bloques = dayData[doctor];
+                totalBloques += 3; // 3 bloques por doctor
+                bloquesOcupados += bloques.length;
+            }
+
+            if (bloquesOcupados === 0) return "green";
+            if (bloquesOcupados < totalBloques) return "yellow";
+            return "red";
+        }
+
+        function renderCalendar(month, year) {
+            datepickerDays.innerHTML = "";
+
+            // Encabezado días
+            dayInitials.forEach(d => {
+                const dh = document.createElement("div");
+                dh.textContent = d;
+                dh.className = "day-header";
+                datepickerDays.appendChild(dh);
+            });
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month+1, 0).getDate();
+            let startDay = firstDay - 1;
+            if(startDay < 0) startDay = 6;
+
+            for(let i=0;i<startDay;i++){
+                const empty = document.createElement("div");
+                empty.className = "disabled";
+                datepickerDays.appendChild(empty);
+            }
+
+            const today = new Date();
+            today.setHours(0,0,0,0);
+
+            for(let d=1; d<=daysInMonth; d++){
+                const dayDiv = document.createElement("div");
+                dayDiv.textContent = d;
+
+                const dateObj = new Date(year, month, d);
+                const dateKey = dateObj.toISOString().slice(0,10);
+                const color = getDayColor(dateObj);
+                dayDiv.style.backgroundColor = color;
+
+                // Si es pasado o roja → deshabilitar clic
+                if(dateObj < today || color === "red") {
+                    dayDiv.classList.add("disabled");
+                } else {
+                    dayDiv.addEventListener("click", () => {
+                        const dateStr = dateObj.toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit', year:'numeric'});
+                        sendMessageToChat(dateStr);
+                        datepickerContainer.style.display = "none";
+                    });
+                }
+
+                datepickerDays.appendChild(dayDiv);
+            }
+
+            monthYear.textContent = new Date(year, month).toLocaleDateString('es-ES', {month:'long', year:'numeric'});
+        }
+
+
+        prevMonth.addEventListener("click", () => {
+            currentMonth--;
+            if(currentMonth<0){ currentMonth=11; currentYear--; }
+            renderCalendar(currentMonth, currentYear);
+        });
+
+        nextMonth.addEventListener("click", () => {
+            currentMonth++;
+            if(currentMonth>11){ currentMonth=0; currentYear++; }
+            renderCalendar(currentMonth, currentYear);
+        });
+
+        function showDatepicker() {
+            datepickerContainer.style.display = "block";
+            renderCalendar(currentMonth, currentYear);
+        }
+
+        function sendMessageToChat(message) {
+            const userDiv = document.createElement("div");
+            userDiv.className = "user";
+            userDiv.textContent = "Tú: " + message;
+            chatMessages.appendChild(userDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            fetch("/", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: "message=" + encodeURIComponent(message)
+            })
+            .then(response => response.text())
+            .then(data => {
+                // Limpiar botones anteriores si existieran
+                const existingButtons = chatMessages.querySelectorAll(".horario-btn-container");
+                existingButtons.forEach(el => el.remove());
+
+                const botDiv = document.createElement("div");
+                botDiv.className = "bot";
+
+                try {
+                    const msgJson = JSON.parse(data);
+                    if(msgJson.tipo === "horarios") {
+                        // Crear contenedor para mantener saltos de línea
+                        const horariosContainer = document.createElement("div");
+                        horariosContainer.style.whiteSpace = "pre-line"; // respetar saltos
+                        horariosContainer.textContent = "Selecciona un horario:\n\n";
+
+                        // Recorrer por doctor
+                        let currentDoctor = "";
+                        msgJson.contenido.forEach(item => {
+                            if(item.doctor !== currentDoctor){
+                                currentDoctor = item.doctor;
+                                horariosContainer.textContent += `${currentDoctor}:\n`;
+                            }
+                            horariosContainer.textContent += `  ${item.numero}. ${item.bloque} 🟢\n`;
+                        });
+
+                        botDiv.appendChild(horariosContainer);
+                    } else if(msgJson.tipo === "citas") {
+                        const container = document.createElement("div");
+                        container.style.whiteSpace = "pre-line"; // mantener saltos de línea
+
+                        for (const doctor in msgJson.contenido) {
+                            container.textContent += doctor + ":\n";
+                            msgJson.contenido[doctor].forEach(cita => {
+                                container.textContent += `  ${cita.numero}. Fecha: ${cita.fecha} Hora: ${cita.hora}\n`;
+                            });
+                            container.textContent += "\n";
+                        }
+
+                        botDiv.appendChild(container);
+                    } else {
+                        botDiv.textContent = "Bot: " + data;
+                    }
+                } catch(e) {
+                    botDiv.textContent = "Bot: " + data;
+                }
+
+                chatMessages.appendChild(botDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                // Mostrar calendario si el bot indica elegir fecha
+                if(data.includes("Elige la fecha")) {
+                    loadAvailability().then(() => showDatepicker());
+                }
+            })
+
+
+            .catch(error => {
+                const botDiv = document.createElement("div");
+                botDiv.className = "bot";
+                botDiv.textContent = "Bot: Error de conexión.";
+                chatMessages.appendChild(botDiv);
+            });
+        }
+
+        chatButton.addEventListener("click", () => {
+            if (chatWindow.style.display === "flex") {
+                chatWindow.style.display = "none";
+                return;
+            }
+            chatWindow.style.display = "flex";
+            if(chatMessages.children.length===0){
+                sendMessageToChat("");
+            }
+        });
+
+        chatForm.addEventListener("submit", (e)=>{
+            e.preventDefault();
+            const msg = chatInput.value.trim();
+            if(!msg) return;
+            chatInput.value = "";
+            sendMessageToChat(msg);
+        });
+    </script>
+</body>
+</html>
+
+
