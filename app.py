@@ -3,18 +3,20 @@ from Bot.Orchestrator import HandleMessage
 import json
 import os
 
-app = Flask(__name__)
+# Crear la app Flask y especificar carpeta de templates
+app = Flask(__name__, template_folder="Templates")
 
+# Archivo de datos
 DATES_FILE = "Data/Dates.json"
 
 @app.route("/", methods=["GET", "POST"])
 def Home():
     if request.method == "POST":
-        user_input = request.form["message"]
+        user_input = request.form.get("message", "")
         session_id = request.form.get("session_id", "default")
         response = HandleMessage(user_input, session_id=session_id)
         return response  # Devuelve solo la respuesta como texto
-    return render_template("Index.html")
+    return render_template("index.html")  # Asegúrate de que el archivo se llame index.html
 
 # Endpoint para devolver disponibilidad de fechas
 @app.route("/api/dates")
@@ -34,7 +36,11 @@ if __name__ == "__main__":
     if not os.path.exists(DATES_FILE):
         with open(DATES_FILE, "w", encoding="utf-8") as f:
             json.dump({}, f)
-    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    
+    # Ejecutar Flask en host 0.0.0.0 y puerto dinámico para Render
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=True, host="0.0.0.0", port=port)
+
 
 
 
